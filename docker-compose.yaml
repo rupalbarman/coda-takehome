@@ -1,0 +1,108 @@
+services:
+  redis:
+    image: redis:6.2-alpine
+    ports:
+      - 6379:6379
+    networks:
+      - main_network
+
+  core:
+    platform: linux/amd64
+    container_name: core
+    image: core:latest
+    command: sh -c "uvicorn core.main:app --host 0.0.0.0 --port 8000 --reload"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - ./core/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    ports:
+      - 8000:8000
+    volumes:
+      - .:/usr/src/app
+    depends_on:
+      - redis
+    networks:
+      - main_network
+
+  api_1:
+    platform: linux/amd64
+    container_name: api_1
+    image: api:latest
+    command: sh -c "uvicorn api.main:app --host 0.0.0.0 --port 8001 --reload"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - ./api/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - HEARTBEAT_URL=http://core:8000/beat/
+      - INGESTION_URL=http://api_1:8001/api/
+    ports:
+      - 8001:8001
+    volumes:
+      - .:/usr/src/app
+    depends_on:
+      - core
+      - redis
+    networks:
+      - main_network
+
+  api_2:
+    platform: linux/amd64
+    container_name: api_2
+    image: api:latest
+    command: sh -c "uvicorn api.main:app --host 0.0.0.0 --port 8002 --reload"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - ./api/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - HEARTBEAT_URL=http://core:8000/beat/
+      - INGESTION_URL=http://api_2:8002/api/
+    ports:
+      - 8002:8002
+    volumes:
+      - .:/usr/src/app
+    depends_on:
+      - core
+      - redis
+    networks:
+      - main_network
+
+  api_3:
+    platform: linux/amd64
+    container_name: api_3
+    image: api:latest
+    command: sh -c "uvicorn api.main:app --host 0.0.0.0 --port 8003 --reload"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - ./api/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - HEARTBEAT_URL=http://core:8000/beat/
+      - INGESTION_URL=http://api_3:8003/api/
+    ports:
+      - 8003:8003
+    volumes:
+      - .:/usr/src/app
+    depends_on:
+      - core
+      - redis
+    networks:
+      - main_network
+
+volumes:
+  cache:
+    driver: local
+
+networks:
+  main_network:
+    driver: bridge
